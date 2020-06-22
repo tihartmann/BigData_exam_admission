@@ -69,8 +69,9 @@ def plot_clusters(df, out_path):
     join_df = geopandas.GeoDataFrame(kms_df.merge(world, left_on="Country Code", right_on="iso_a3", how="left"), geometry="geometry")
     join_df = join_df[join_df.geometry != None]
 
-    p = geoplot.choropleth(join_df, hue="prediction", cmap="Greens", legend=True)
-    plt.title("Countries clustered by co2-emissions")
+    geoplot.choropleth(join_df, hue="prediction", cmap="Greens", legend=True)
+    #plt.title("Countries clustered by CO2-emissions")
+    
     plt.savefig(out_path)
 
 def main():
