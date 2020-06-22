@@ -5,6 +5,10 @@ from pyspark.sql.types import FloatType
 from functools import reduce
 from pyspark.ml.clustering import KMeans
 from pyspark.ml.feature import VectorAssembler
+import geoplot
+import geopandas
+import requests
+import matplotlib.pyplot as plt
 
 def preprocess_data(df):
     """
@@ -56,11 +60,20 @@ def compute_k_means(df, k):
     transformed = model.transform(new_df)
     return transformed
 
+def plot_clusters(df, out_path):
+    world = geopandas.read_file(geopandas.datasets.get_path('naturalearth_lowres'))
+    # geoplot needs a GeoDataFrame (pandas), so convert the spark dataframe to pandas
+    kms_df = df.toPandas()
+    
+    # merge world and df on Country Code and iso_a3 to get the geometry 
+    join_df = geopandas.GeoDataFrame(kms_df.merge(world, left_on="Country Code", right_on="iso_a3", how="left"), geometry="geometry")
+    join_df = join_df[join_df.geometry != None]
 
+    p = geoplot.choropleth(join_df, hue="prediction", cmap="Greens", legend=True)
+    plt.title("Countries clustered by co2-emissions")
+    plt.savefig(out_path)
 
 def main():
-    
-
     # 1. import the data
     co2_data = sqlContext.read.option("inferSchema", "true").option("header", "true").option("nanValue", "..").csv("data/co2_emissions_2004-2014.csv")
     co2_data = preprocess_data(co2_data)
@@ -71,8 +84,9 @@ def main():
     compute_change_udf = F.udf(compute_emission_change, FloatType())
     co2_data = co2_data.withColumn("change", compute_change_udf(F.struct([co2_data[x] for x in co2_data.columns])))
     
-    co2_data = compute_k_means(co2_data, k=6)
-    co2_data.show(50)
+    co2_data = compute_k_means(co2_data, k=7)
+
+    plot_clusters(co2_data, "co2_emissions.png")
 
 if __name__ == "__main__":
     # set configuration and context
