@@ -53,7 +53,7 @@ def compute_k_means(df, k, show_elbow=False):
     that includes predictions based on KMeans. If show_elbow is set to True, an elbow plot is
     shown to find the best k. 
     """
-    va = VectorAssembler().setInputCols(["change"]).setOutputCol("features")
+    va = VectorAssembler().setInputCols(["2004", "2014", "change"]).setOutputCol("features")
 
     new_df = va.setHandleInvalid("skip").transform(df)
 
